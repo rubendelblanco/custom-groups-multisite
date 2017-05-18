@@ -1,1 +1,1 @@
-Restrict access to your sites creating user groups. Supports multisite.
+Restrict access to your wordpress sites creating user groups. Supports multisite.
