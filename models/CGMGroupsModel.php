@@ -17,12 +17,21 @@
     }
 
     /*
+    * get_groups
+    * @return todos los grupos
+    */
+    public function get_groups(){
+      $query = "SELECT * FROM $this->cgm_groups";
+      return $this->conn->query($query);
+    }
+
+    /*
      * get_group_name
-     * Devuelve el nombre del grupo
-     * @return nombre, null si no existe.
+     * Devuelve el grupo con id $id
+     * @return grupo, null si no existe.
      */
-    public function get_group_name($id){
-      $query = "SELECT nombre FROM $this->cgm_groups WHERE id=$id";
+    public function get_group($id){
+      $query = "SELECT * FROM $this->cgm_groups WHERE id=$id";
       $result = $this->conn->get_row($query);
     }
 
@@ -145,6 +154,17 @@
     }
 
     /*
+    *delete_groups
+    *borra un array de grupos
+    *@return true|false
+    */
+    public function delete_groups($group){
+      $query = "DELETE FROM {$this->cgm_groups} WHERE id IN ($ids)";
+      $result = $this->conn->query($query);
+      return $result;
+    }
+
+    /*
     *delete_group_from_site
     *borra a un grupo $group de un $site
     *@return true|false
@@ -165,5 +185,6 @@
       $result = $this->conn->query($query);
       return $result;
     }
+
   }
  ?>

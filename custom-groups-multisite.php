@@ -8,6 +8,7 @@ Network: true
 */
 
 require ('models/CGMGroupsModel.php');
+require ('controllers/CGMAdminMenuController.php');
 
 function cgm_install(){
   global $wpdb;
@@ -49,4 +50,5 @@ function cgm_install(){
 }
 
 register_activation_hook(__FILE__, 'cgm_install');
+add_action('admin_menu', 'cgm_admin_menu');
 ?>
