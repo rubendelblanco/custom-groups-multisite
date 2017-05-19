@@ -4,11 +4,17 @@
 * Gestiona las consultas de las tablas del plugin
 */
   class CGMGroupsModel {
-    global $wpdb;
-    private $cgm_groups_table = $wpdb->prefix.'cgm_groups';
-    private $cgm_users_table = $wpdb->prefix.'cgm_users';
-    private $cgm_sites = $wpdb->prefix.'cgm_sites';
-    private $users = $wpdb->prefix.'users';
+
+    private $cgm_groups, $cgm_users, $cgm_sites, $users;
+    private $conn;
+
+    public function __construct($wpdb) {
+      $this->conn=$wpdb;
+      $this->cgm_groups = $this->conn->prefix.'cgm_groups';
+      $this->cgm_users = $this->conn->prefix.'cgm_users';
+      $this->cgm_sites = $this->conn->prefix.'cgm_sites';
+      $this->users = $this->conn->prefix.'users';
+    }
 
     /*
      * get_group_name
@@ -16,30 +22,29 @@
      * @return nombre, null si no existe.
      */
     public function get_group_name($id){
-      $query = "SELECT nombre FROM $cgm_groups_table WHERE id=$id";
-      $result = $wpdb->get_row($query);
-
+      $query = "SELECT nombre FROM $this->cgm_groups WHERE id=$id";
+      $result = $this->conn->get_row($query);
     }
 
     /*
      * get_users
      * Devuelve los usuarios del grupo $id
-     * @return usuarios en objeto $wpdb.
+     * @return usuarios en objeto $this->conn.
      */
     public function get_users($id){
-      $query = "SELECT {$users}.* FROM $users, $cgm_users_table WHERE {$users}.id={$cgm_users_table}.user_id AND {$cgm_users_table}.group_id=$id";
-      $result = $wpdb->query($query);
+      $query = "SELECT {$this->users}.* FROM $this->users, $this->cgm_groups WHERE {$this->users}.id={$this->cgm_groups}.user_id AND {$this->cgm_groups}.group_id=$id";
+      $result = $this->conn->query($query);
       return $result;
     }
 
     /*
      * get_user_groups
      * Devuelve los grupos del usuario $id
-     * @return grupos en objeto $wpdb.
+     * @return grupos en objeto $this->conn.
      */
     public function get_user_groups($id){
-      $query = "SELECT {$cgm_groups_table}.* FROM $cgm_groups_table, $cgm_users_table WHERE {$cgm_groups_table}.id={$cgm_users_table}.group_id AND {$cgm_users_table}.user_id=$id";
-      $result = $wpdb->query($query);
+      $query = "SELECT {$this->cgm_groups}.* FROM $this->cgm_groups, $this->cgm_users WHERE {$this->cgm_groups}.id={$this->cgm_users}.group_id AND {$this->cgm_groups}.user_id=$id";
+      $result = $this->conn->query($query);
       return $result;
     }
 
@@ -48,10 +53,117 @@
      * @return true si usuario id = $user esta en el grupo con id = $group. False si no.
      */
     public function is_user_in_group($user, $group){
-      $query = "SELECT COUNT (*) FROM $cgm_users_table WHERE {$cgm_users_table}.user_id={$user}".
-      " AND {$cgm_users_table}.group_id=$group";
-      $result = $wpdb->get_var($query);
+      $query = "SELECT COUNT (*) FROM $this->cgm_groups WHERE {$this->cgm_groups}.user_id={$user}".
+      " AND {$this->cgm_groups}.group_id=$group";
+      $result = $this->conn->get_var($query);
       return $result != 0;
+    }
+
+    /*
+    * is_user_accessible
+    * @return true si el usuario $user puede entrar en el site $site
+    */
+    public function is_user_accessible($user, $site){
+      $query = "SELECT COUNT (*) FROM $this->cgm_groups, $this->cgm_sites WHERE {$this->cgm_groups}.group_id = {$this->cgm_sites}.group_id".
+      " AND {$this->cgm_groups}.user_id=$user AND {$this->cgm_sites}.blog_id=$site";
+      $result = $this->conn->get_var($query);
+      return $result != 0;
+    }
+
+    /*
+    * is_group_accessible
+    * @return true si el grupo $group puede entrar en el site $site
+    */
+    public function is_group_accessible($group, $site){
+      $query = "SELECT COUNT (*) FROM $this->cgm_sites WHERE {$this->cgm_sites}.group_id=$group AND {$this->cgm_sites}.blog_id=$site";
+      $result = $this->conn->get_var($query);
+      return $result != 0;
+    }
+
+    /*
+    * set_group
+    * Crea un nuevo grupo
+    * @return true si todo va bien, false si error.
+    */
+    public function set_group($nombre){
+      $query = "INSERT INTO {$this->cgm_groups} (nombre) VALUES ($nombre)";
+      $result = $this->conn->query($query);
+      return $result;
+    }
+
+    /*
+    * set_group_in_site
+    * Crea un nuevo permiso de $group en el site $site
+    * @return true si todo va bien, false si error o si ya existe ese registro.
+    */
+    public function set_group_in_site($group, $site){
+      $query = "SELECT COUNT (*) FROM {$this->cgm_sites} WHERE {$this->cgm_sites}.group_id=$group AND {$this->cgm_sites}.blog_id=$site";
+      $result = $this->conn->get_var($query);
+      if ($result == 0){
+        $query = "INSERT INTO {$this->cgm_sites} (group_id, blog_id) VALUES ($group, $site)";
+        $result = $this->conn->query($query);
+        return $result;
+      }
+      else return false;
+    }
+
+    /*
+    * set_user_in_group
+    * Inserta a $user en el grupo $group
+    * @return true si todo va bien, false si error.
+    */
+    public function set_user_in_group($user, $group){
+      $query = "INSERT INTO {$this->cgm_users} (user_id, group_id)
+        SELECT user_id, group_id FROM DUAL
+        WHERE NOT EXISTS (SELECT * FROM {$this->cgm_users}
+        WHERE user_id=$user AND group_id=$group)
+        LIMIT 1";
+      $result = $this->conn->query($query);
+      return $result;
+    }
+
+    /*
+    *update_group
+    *actualiza el nombre del group $group
+    *@return true|false
+    */
+    public function update_group($nombre, $group){
+      $query = "UPDATE $this->cgm_groups SET nombre=$nombre WHERE id=$group";
+      $result = $this->conn->query($query);
+      return $result;
+    }
+
+    /*
+    *delete_group
+    *borra un grupo
+    *@return true|false
+    */
+    public function delete_group($group){
+      $query = "DELETE FROM {$this->cgm_groups} WHERE id=$group";
+      $result = $this->conn->query($query);
+      return $result;
+    }
+
+    /*
+    *delete_group_from_site
+    *borra a un grupo $group de un $site
+    *@return true|false
+    */
+    public function delete_group_from_site($group, $site){
+      $query = "DELETE FROM {$this->cgm_sites} WHERE group_id=$group AND blog_id=$site";
+      $result = $this->conn->query($query);
+      return $result;
+    }
+
+    /*
+    *delete_user_from_group
+    *borra a un $user de un $group
+    *@return true|false
+    */
+    public function delete_user_from_group($user, $group){
+      $query = "DELETE FROM {$this->cgm_users} WHERE group_id=$group AND user_id=$user";
+      $result = $this->conn->query($query);
+      return $result;
     }
   }
  ?>
