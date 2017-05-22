@@ -22,7 +22,7 @@
     */
     public function get_groups(){
       $query = "SELECT * FROM $this->cgm_groups";
-      return $this->conn->query($query);
+      return $this->conn->get_results($query);
     }
 
     /*
@@ -42,7 +42,7 @@
      */
     public function get_users($id){
       $query = "SELECT {$this->users}.* FROM $this->users, $this->cgm_groups WHERE {$this->users}.id={$this->cgm_groups}.user_id AND {$this->cgm_groups}.group_id=$id";
-      $result = $this->conn->query($query);
+      $result = $this->conn->get_results($query);
       return $result;
     }
 
@@ -53,7 +53,7 @@
      */
     public function get_user_groups($id){
       $query = "SELECT {$this->cgm_groups}.* FROM $this->cgm_groups, $this->cgm_users WHERE {$this->cgm_groups}.id={$this->cgm_users}.group_id AND {$this->cgm_groups}.user_id=$id";
-      $result = $this->conn->query($query);
+      $result = $this->conn->get_results($query);
       return $result;
     }
 
@@ -96,7 +96,7 @@
     */
     public function set_group($nombre){
       $query = "INSERT INTO {$this->cgm_groups} (nombre) VALUES ($nombre)";
-      $result = $this->conn->query($query);
+      $result = $this->conn->get_results($query);
       return $result;
     }
 
@@ -110,7 +110,7 @@
       $result = $this->conn->get_var($query);
       if ($result == 0){
         $query = "INSERT INTO {$this->cgm_sites} (group_id, blog_id) VALUES ($group, $site)";
-        $result = $this->conn->query($query);
+        $result = $this->conn->get_results($query);
         return $result;
       }
       else return false;

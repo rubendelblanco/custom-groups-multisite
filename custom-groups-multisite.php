@@ -7,8 +7,10 @@ Version: 1.0
 Network: true
 */
 
+define ('PLUGIN_PATH',plugin_dir_path( __FILE__ ));
 require ('models/CGMGroupsModel.php');
 require ('controllers/CGMAdminMenuController.php');
+require ('controllers/CGMStoreFormsController.php');
 
 function cgm_install(){
   global $wpdb;
@@ -51,4 +53,5 @@ function cgm_install(){
 
 register_activation_hook(__FILE__, 'cgm_install');
 add_action('admin_menu', 'cgm_admin_menu');
+add_action('admin_action_cgm_add_group','cgm_store_group');
 ?>
