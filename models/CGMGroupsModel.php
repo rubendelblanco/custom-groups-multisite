@@ -10,10 +10,10 @@
 
     public function __construct($wpdb) {
       $this->conn=$wpdb;
-      $this->cgm_groups = $this->conn->prefix.'cgm_groups';
-      $this->cgm_users = $this->conn->prefix.'cgm_users';
-      $this->cgm_sites = $this->conn->prefix.'cgm_sites';
-      $this->users = $this->conn->prefix.'users';
+      $this->cgm_groups = $this->conn->base_prefix.'cgm_groups';
+      $this->cgm_users = $this->conn->base_prefix.'cgm_users';
+      $this->cgm_sites = $this->conn->base_prefix.'cgm_sites';
+      $this->users = $this->conn->base_prefix.'users';
     }
 
     /*
@@ -92,12 +92,13 @@
     /*
     * set_group
     * Crea un nuevo grupo
-    * @return true si todo va bien, false si error.
+    * @return el id del grupo insertado o false si hay error
     */
     public function set_group($nombre){
-      $query = "INSERT INTO {$this->cgm_groups} (nombre) VALUES ($nombre)";
-      $result = $this->conn->get_results($query);
-      return $result;
+      $query = "INSERT INTO {$this->cgm_groups} (nombre) VALUES ('$nombre')";
+      $result = $this->conn->query($query);
+      if ($result!==false) return $this->conn->insert_id;
+      return false;
     }
 
     /*
@@ -110,7 +111,7 @@
       $result = $this->conn->get_var($query);
       if ($result == 0){
         $query = "INSERT INTO {$this->cgm_sites} (group_id, blog_id) VALUES ($group, $site)";
-        $result = $this->conn->get_results($query);
+        $result = $this->conn->query($query);
         return $result;
       }
       else return false;
@@ -137,7 +138,7 @@
     *@return true|false
     */
     public function update_group($nombre, $group){
-      $query = "UPDATE $this->cgm_groups SET nombre=$nombre WHERE id=$group";
+      $query = "UPDATE $this->cgm_groups SET nombre='$nombre' WHERE id=$group";
       $result = $this->conn->query($query);
       return $result;
     }

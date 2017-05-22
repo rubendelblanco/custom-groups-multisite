@@ -38,7 +38,7 @@ class CGMGroupsTable extends WP_List_Table
      * @param $item - row (key, value array)
      * @return HTML
      */
-    function column_marca($item)
+    function column_nombre($item)
     {
         // links going to /admin.php?page=[your_plugin_page][&other_params]
         // notice how we used $_REQUEST['page'], so action will be done on curren page
@@ -80,10 +80,9 @@ class CGMGroupsTable extends WP_List_Table
     {
         $columns = array(
             'cb' => '<input type="checkbox" />', //Render a checkbox instead of text
-            'id' => __('ID', 'reparaciones'),
-            'nombre' => __('Cliente','reparaciones'),
-            'miembros'  => __('E-mail','reparaciones'),
-            'sites accesibles' => __('Fecha registro', 'reparaciones')
+            'nombre' => __('Grupo','custom_groups'),
+          /*  'miembros'  => __('E-mail','reparaciones'),
+            'sites accesibles' => __('Fecha registro', 'reparaciones')*/
         );
         return $columns;
     }
@@ -125,7 +124,6 @@ class CGMGroupsTable extends WP_List_Table
      */
      function process_bulk_action()
      {
-         require ('../models/CGMGroupsModel.php');
          global $wpdb;
          $db = new CGMGroupsModel($wpdb);
 
@@ -148,8 +146,9 @@ class CGMGroupsTable extends WP_List_Table
     function prepare_items()
     {
         global $wpdb;
-        $table_name = $wpdb->prefix . 'incidencias_listado'; // do not forget about tables prefix
-        $table_users = $wpdb->prefix. 'users';
+        $table_groups = $wpdb->base_prefix . 'cgm_groups'; // do not forget about tables prefix
+        $table_users = $wpdb->base_prefix. 'cgm_users';
+        $table_sites = $wpdb->base_prefix. 'cgm_sites';
         $per_page = 10; // constant, how much records will be shown per page
 
         $columns = $this->get_columns();
@@ -163,7 +162,7 @@ class CGMGroupsTable extends WP_List_Table
         $this->process_bulk_action();
 
         // will be used in pagination settings
-        $total_items = $wpdb->get_var("SELECT COUNT(id) FROM $table_name");
+        $total_items = $wpdb->get_var("SELECT COUNT(id) FROM $table_groups");
 
         // prepare query params, as usual current page, order by and order direction
         $paged = isset($_REQUEST['paged']) ? max(0, intval($_REQUEST['paged']) - 1) : 0;
@@ -172,21 +171,20 @@ class CGMGroupsTable extends WP_List_Table
 
         // [REQUIRED] define $items array
         // notice that last argument is ARRAY_A, so we will retrieve array
-        $query = "SELECT DISTINCT cliente.user_email, cliente.display_name AS cliente, tecnico.display_name AS tecnico, wp_incidencias_listado.id, descripcion, marca, fecha_registro".
-         " FROM $table_users, $table_name JOIN $table_users cliente ON cliente.ID = ".$table_name.".user_id JOIN $table_users tecnico ON tecnico.ID = ".$table_name.".tecnico_id";
+        $query = "SELECT id,nombre FROM $table_groups";
 
         //consulta de busqueda
-        if (isset( $_REQUEST ["s"] )){
+        /*if (isset( $_REQUEST ["s"] )){
            $search = $_REQUEST["s"];
            $query .= " WHERE cliente.display_name LIKE '%%{$search}%%' OR marca LIKE '%%{$search}%%' OR cliente.user_email LIKE '%%{$search}%%'";
-         }
+         }*/
         $this->items = $wpdb->get_results($wpdb->prepare($query, $per_page, $paged), ARRAY_A);
 
         // [REQUIRED] configure pagination
         $this->set_pagination_args(array(
             'total_items' => $total_items, // total items defined above
             'per_page' => $per_page, // per page constant defined at top of method
-            'search' =>$_REQUEST["s"] , // busqueda
+            //'search' =>$_REQUEST["s"] , // busqueda
             'total_pages' => ceil($total_items / $per_page) // calculate pages count
         ));
 

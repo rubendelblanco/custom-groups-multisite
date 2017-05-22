@@ -3,4 +3,10 @@
   href="<?php echo get_admin_url(get_current_blog_id(), 'admin.php?page=grupos_multisite&action=add');?>">
   Nuevo grupo</a>
   </h2>
+  <?php
+    require_once(PLUGIN_PATH.'controllers/CGMGroupsTableController.php');
+    $tabla = new CGMGroupsTable();
+    $tabla->prepare_items();
+    $tabla->display();
+   ?>
 </div>
