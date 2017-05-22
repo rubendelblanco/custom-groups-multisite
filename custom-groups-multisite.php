@@ -11,6 +11,7 @@ define ('PLUGIN_PATH',plugin_dir_path( __FILE__ ));
 require ('models/CGMGroupsModel.php');
 require ('controllers/CGMAdminMenuController.php');
 require ('controllers/CGMStoreFormsController.php');
+include_once ('flash-messages/WPFlashMessages.php');
 
 function cgm_install(){
   global $wpdb;
