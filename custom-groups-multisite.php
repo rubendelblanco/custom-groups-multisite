@@ -53,6 +53,7 @@ function cgm_install(){
 }
 
 register_activation_hook(__FILE__, 'cgm_install');
-add_action('admin_menu', 'cgm_admin_menu');
+add_action('network_admin_menu', 'cgm_admin_menu');
 add_action('admin_action_cgm_add_group','cgm_store_group');
+add_action('admin_action_cgm_users_to_group','cgm_users_to_group');
 ?>

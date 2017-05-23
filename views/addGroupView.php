@@ -42,7 +42,7 @@ section > div + div {
                 if ($s->blog_id == 1) $site_name = 'escritorio';
               ?>
 
-              <option name="<?php echo $s->blog_id?>"><?php echo $site_name?></option>
+              <option value="<?php echo $s->blog_id?>"><?php echo $site_name?></option>
               <?php endforeach;?>
             </select>
         </div>

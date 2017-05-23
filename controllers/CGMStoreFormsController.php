@@ -42,6 +42,10 @@ function cgm_store_group(){
   }
 }
 
+function cgm_users_to_group(){
+  print_r($_POST);
+}
+
 /*
 * display_errors
 * Crea un flash message con los errores de validacion y los renderiza
