@@ -6,7 +6,7 @@
 */
 class WPFlashMessages {
     public function __construct() {
-        add_action('admin_notices', array(&$this, 'show_flash_messages'));
+        add_action('network_admin_notices', array(&$this, 'show_flash_messages'));
     }
     //Flash Messages
     public static function queue_flash_message($message, $class = '') {

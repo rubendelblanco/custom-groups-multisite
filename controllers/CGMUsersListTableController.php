@@ -88,7 +88,7 @@ class CGMGroupsTable extends WP_List_Table
     function get_sortable_columns()
     {
         $sortable_columns = array(
-            'Nombre de usuario' => array('display_name', true),
+            'user_login' => array('display_name', true),
         );
         return $sortable_columns;
     }
@@ -98,37 +98,6 @@ class CGMGroupsTable extends WP_List_Table
      *
      * @return array
      */
-     /*
-    function get_bulk_actions()
-    {
-        $actions = array(
-            'delete' => 'Borrar'
-        );
-        return $actions;
-    }*/
-
-    /**
-     * [OPTIONAL] This method processes bulk actions
-     * it can be outside of class
-     * it can not use wp_redirect coz there is output already
-     * in this example we are processing delete action
-     * message about successful deletion will be shown on page in next part
-     */
-     function process_bulk_action()
-     {
-         global $wpdb;
-         $db = new CGMGroupsModel($wpdb);
-
-         if ('delete' === $this->current_action()) {
-
-             $ids = isset($_REQUEST['id']) ? $_REQUEST['id'] : array();
-             if (is_array($ids)) $ids = implode(',', $ids);
-
-             if (!empty($ids)) {
-                 $db->delete_groups($ids);
-             }
-         }
-     }
 
     /**
      * [REQUIRED] This is the most important method
@@ -170,7 +139,11 @@ class CGMGroupsTable extends WP_List_Table
            $search = $_REQUEST["s"];
            $query .= " WHERE cliente.display_name LIKE '%%{$search}%%' OR marca LIKE '%%{$search}%%' OR cliente.user_email LIKE '%%{$search}%%'";
          }*/
-        $this->items = $wpdb->get_results($wpdb->prepare($query, $per_page, $paged), ARRAY_A);
+         echo $query.PHP_EOL;
+         echo ' per page: '.$per_page.PHP_EOL;
+         echo ' paged: '.$paged.PHP_EOL;
+         echo ' total items: '.$total_items;
+        //$this->items = $wpdb->get_results($wpdb->prepare($query, $per_page, $paged), ARRAY_A);
 
         // [REQUIRED] configure pagination
         $this->set_pagination_args(array(

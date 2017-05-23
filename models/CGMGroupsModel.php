@@ -62,28 +62,28 @@
      * @return true si usuario id = $user esta en el grupo con id = $group. False si no.
      */
     public function is_user_in_group($user, $group){
-      $query = "SELECT COUNT (*) FROM $this->cgm_groups WHERE {$this->cgm_groups}.user_id={$user}".
+      $query = "SELECT COUNT(*) FROM $this->cgm_groups WHERE {$this->cgm_groups}.user_id={$user}".
       " AND {$this->cgm_groups}.group_id=$group";
-      $result = $this->conn->get_var($query);
-      return $result != 0;
+      $result = $this->conn->get_results($query);
+      return ($result!=0)? true:false;
     }
 
     /*
-    * is_user_accessible
+    * can_user_access
     * @return true si el usuario $user puede entrar en el site $site
     */
-    public function is_user_accessible($user, $site){
-      $query = "SELECT COUNT (*) FROM $this->cgm_groups, $this->cgm_sites WHERE {$this->cgm_groups}.group_id = {$this->cgm_sites}.group_id".
-      " AND {$this->cgm_groups}.user_id=$user AND {$this->cgm_sites}.blog_id=$site";
+    public function can_user_access($user, $site){
+      $query = "SELECT COUNT(*) FROM {$this->cgm_users}, {$this->cgm_sites} WHERE {$this->cgm_users}.group_id = {$this->cgm_sites}.group_id".
+      " AND {$this->cgm_users}.user_id = $user AND {$this->cgm_sites}.blog_id = $site";
       $result = $this->conn->get_var($query);
-      return $result != 0;
+      return ($result!=0)? true:false;
     }
 
     /*
-    * is_group_accessible
+    * can_group_access
     * @return true si el grupo $group puede entrar en el site $site
     */
-    public function is_group_accessible($group, $site){
+    public function can_group_access($group, $site){
       $query = "SELECT COUNT (*) FROM $this->cgm_sites WHERE {$this->cgm_sites}.group_id=$group AND {$this->cgm_sites}.blog_id=$site";
       $result = $this->conn->get_var($query);
       return $result != 0;
@@ -124,10 +124,9 @@
     */
     public function set_user_in_group($user, $group){
       $query = "INSERT INTO {$this->cgm_users} (user_id, group_id)
-        SELECT user_id, group_id FROM DUAL
+        SELECT $user, $group FROM DUAL
         WHERE NOT EXISTS (SELECT * FROM {$this->cgm_users}
-        WHERE user_id=$user AND group_id=$group)
-        LIMIT 1";
+        WHERE user_id=$user AND group_id=$group)";
       $result = $this->conn->query($query);
       return $result;
     }

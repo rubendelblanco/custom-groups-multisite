@@ -11,7 +11,7 @@ define ('PLUGIN_PATH',plugin_dir_path( __FILE__ ));
 require ('models/CGMGroupsModel.php');
 require ('controllers/CGMAdminMenuController.php');
 require ('controllers/CGMStoreFormsController.php');
-include_once ('flash-messages/WPFlashMessages.php');
+include ('flash-messages/WPFlashMessages.php');
 
 function cgm_install(){
   global $wpdb;
@@ -52,8 +52,20 @@ function cgm_install(){
   dbDelta( $sql3 );
 }
 
+//comprueba si el usuario puede entrar al site
+function cgm_check_user_entry(){
+  global $wpdb;
+  $conn = new CGMGroupsModel($wpdb);
+  $response = $conn->can_user_access(get_current_user_id(),get_current_blog_id());
+  if (!$response){
+    echo 'No puedes acceder a este sitio';
+    die();
+  }
+}
+
 register_activation_hook(__FILE__, 'cgm_install');
 add_action('network_admin_menu', 'cgm_admin_menu');
 add_action('admin_action_cgm_add_group','cgm_store_group');
 add_action('admin_action_cgm_users_to_group','cgm_users_to_group');
+add_action('wp_head', 'cgm_check_user_entry');
 ?>

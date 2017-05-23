@@ -8,9 +8,10 @@
    ?>
 </div>
 <script>
-jQuery(document).ready(){
-  jQuery('.cgm-user').click(){
-    
-  }
-}
+  jQuery('.cgm-user').click(function(){
+    var values = jQuery("input[name='id\\[\\]']").map(function(){
+      if(jQuery(this).is(':checked')) return jQuery(this).val();
+    }).get();
+    jQuery('[name="users_list"]').val(values);
+  });
 </script>

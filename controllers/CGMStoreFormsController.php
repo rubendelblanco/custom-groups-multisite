@@ -38,12 +38,32 @@ function cgm_store_group(){
     else{
       queue_flash_message('Error al añadir el grupo :(', $class='error');
     }
-    wp_redirect(get_admin_url().'admin.php?page=grupos_multisite&action=add');
+    wp_redirect(get_admin_url().'/network/admin.php?page=grupos_multisite&action=add');
   }
 }
 
 function cgm_users_to_group(){
   print_r($_POST);
+  global $wpdb;
+  $conn = new CGMGroupsModel($wpdb);
+  $users = explode(',',$_POST['users_list']);
+
+  if ($_POST['accion_grupo']=='add'){
+    $message = '';
+
+    foreach($users as $user) {
+      $success = $conn->set_user_in_group($user,$_POST['id_grupo']);
+      if ($success==false) {
+          queue_flash_message('Error al añadir al usuario ID='.$id, $class='error');
+          break;
+      }
+    }
+
+    queue_flash_message( 'Usuario(s) añadido(s) al grupo', $class = 'update' );
+
+    wp_redirect(get_admin_url().'network/admin.php?page=users_grupos');
+  }
+
 }
 
 /*
