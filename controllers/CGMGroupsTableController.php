@@ -45,7 +45,7 @@ class CGMGroupsTable extends WP_List_Table
         // also notice how we use $this->_args['singular'] so in this example it will
         // be something like &person=2
         $actions = array(
-            'edit' => sprintf('<a href="?page=grupos_multisite&id=%s">%s</a>', $item['id'], __('Editar', 'grupos')),
+            'edit' => sprintf('<a href="?page=grupos_multisite&action=edit&id=%s">%s</a>', $item['id'], __('Editar', 'grupos')),
             'delete' => sprintf('<a href="?page=%s&action=delete&id=%s">%s</a>', $_REQUEST['page'], $item['id'], __('Borrar', 'grupos')),
         );
 
@@ -69,6 +69,12 @@ class CGMGroupsTable extends WP_List_Table
         );
     }
 
+    function column_sites($item)
+    {
+      $item['sites'] = str_replace('/','',$item['sites']);
+      return $item['sites'];
+    }
+
     /**
      * [REQUIRED] This method return columns to display in table
      * you can skip columns that you do not want to show
@@ -81,8 +87,8 @@ class CGMGroupsTable extends WP_List_Table
         $columns = array(
             'cb' => '<input type="checkbox" />', //Render a checkbox instead of text
             'nombre' => __('Grupo','custom_groups'),
-          /*  'miembros'  => __('E-mail','reparaciones'),
-            'sites accesibles' => __('Fecha registro', 'reparaciones')*/
+            'miembros'  => __('Número de usuarios','reparaciones'),
+            'sites' => __('Sites accesibles', 'reparaciones')
         );
         return $columns;
     }
@@ -98,6 +104,7 @@ class CGMGroupsTable extends WP_List_Table
     {
         $sortable_columns = array(
             'nombre' => array('display_name', true),
+            'miembros' => array('miembros', true)
         );
         return $sortable_columns;
     }
@@ -130,7 +137,6 @@ class CGMGroupsTable extends WP_List_Table
          if ('delete' === $this->current_action()) {
 
              $ids = isset($_REQUEST['id']) ? $_REQUEST['id'] : array();
-             if (is_array($ids)) $ids = implode(',', $ids);
 
              if (!empty($ids)) {
                  $db->delete_groups($ids);
@@ -149,7 +155,9 @@ class CGMGroupsTable extends WP_List_Table
         $table_groups = $wpdb->base_prefix . 'cgm_groups'; // do not forget about tables prefix
         $table_users = $wpdb->base_prefix. 'cgm_users';
         $table_sites = $wpdb->base_prefix. 'cgm_sites';
-        $per_page = 10; // constant, how much records will be shown per page
+        $table_blogs = $wpdb->base_prefix. 'blogs';
+        $per_page = 20; // constant, how much records will be shown per page
+        $like =''; //variable para poner el search en caso de que lo haya en los dos SELECTS
 
         $columns = $this->get_columns();
         $hidden = array();
@@ -169,22 +177,29 @@ class CGMGroupsTable extends WP_List_Table
         $orderby = (isset($_REQUEST['orderby']) && in_array($_REQUEST['orderby'], array_keys($this->get_sortable_columns()))) ? $_REQUEST['orderby'] : 'id';
         $order = (isset($_REQUEST['order']) && in_array($_REQUEST['order'], array('asc', 'desc'))) ? $_REQUEST['order'] : 'asc';
 
-        // [REQUIRED] define $items array
-        // notice that last argument is ARRAY_A, so we will retrieve array
-        $query = "SELECT id,nombre FROM $table_groups";
-
-        //consulta de busqueda
-        /*if (isset( $_REQUEST ["s"] )){
+        if (isset( $_REQUEST ["s"] )){
            $search = $_REQUEST["s"];
-           $query .= " WHERE cliente.display_name LIKE '%%{$search}%%' OR marca LIKE '%%{$search}%%' OR cliente.user_email LIKE '%%{$search}%%'";
-         }*/
-        $this->items = $wpdb->get_results($wpdb->prepare($query, $per_page, $paged), ARRAY_A);
+           $like= " AND {$table_groups}.nombre LIKE '%%{$search}%%'";
+         }
 
+         //Consulta mejorable
+         $query = "SELECT {$table_groups}.id, {$table_groups}.nombre, ".
+         "GROUP_CONCAT({$table_blogs}.path, IF({$table_blogs}.path='/','escritorio','')) AS sites,".
+         " (SELECT Count(*) FROM {$table_users} WHERE {$table_users}.group_id = {$table_groups}.id)".
+         " AS miembros FROM {$table_blogs}, {$table_groups}, {$table_sites} WHERE {$table_blogs}.blog_id={$table_sites}.blog_id".
+         " AND {$table_sites}.group_id={$table_groups}.id".$like." GROUP BY {$table_groups}.id ".
+         "UNION ALL SELECT {$table_groups}.id, {$table_groups}.nombre, '-' as sites,".
+         " (SELECT Count(*) FROM {$table_users} WHERE {$table_users}.group_id = {$table_groups}.id) AS miembros".
+         " FROM {$table_groups} WHERE {$table_groups}.id NOT IN (SELECT {$table_sites}.group_id FROM {$table_sites})".$like;
+
+        $query .= " ORDER BY $orderby $order";
+        $query .= " LIMIT ".$per_page*$paged.",$per_page";
+        $this->items = $wpdb->get_results($wpdb->prepare($query, $per_page, $paged), ARRAY_A);
         // [REQUIRED] configure pagination
         $this->set_pagination_args(array(
             'total_items' => $total_items, // total items defined above
             'per_page' => $per_page, // per page constant defined at top of method
-            //'search' =>$_REQUEST["s"] , // busqueda
+            'search' =>$_REQUEST["s"] , // busqueda
             'total_pages' => ceil($total_items / $per_page) // calculate pages count
         ));
 

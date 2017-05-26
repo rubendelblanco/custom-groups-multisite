@@ -10,11 +10,16 @@ function cgm_menu_index()
 {
   $path = PLUGIN_PATH.'/views';
 
+  //anadir grupo
   if (isset($_GET['action']) and $_GET['action']=='add'){
     include ($path.'/addGroupView.php');
     add_action ('admin_action_cgm_add_group', 'cgm_store_group');
   }
-  else
+  //editar grupo
+  else if (isset($_GET['action']) and $_GET['action']=='edit' and isset($_GET['id'])){
+    include( $path.'/editGroupView.php');
+  }
+  else //listar grupos
   include( $path.'/indexGroupView.php');
 }
 

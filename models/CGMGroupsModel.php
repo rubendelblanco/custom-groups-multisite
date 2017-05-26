@@ -14,6 +14,7 @@
       $this->cgm_users = $this->conn->base_prefix.'cgm_users';
       $this->cgm_sites = $this->conn->base_prefix.'cgm_sites';
       $this->users = $this->conn->base_prefix.'users';
+      $this->blogs = $this->conn->base_prefix.'blogs';
     }
 
     /*
@@ -26,13 +27,28 @@
     }
 
     /*
-     * get_group_name
+     * get_group
      * Devuelve el grupo con id $id
      * @return grupo, null si no existe.
      */
     public function get_group($id){
       $query = "SELECT * FROM $this->cgm_groups WHERE id=$id";
       $result = $this->conn->get_row($query);
+      return $result;
+    }
+
+    /*
+     * get_sites_in_group
+     * Devuelve los sitios a los que tiene acceso el grupo $id
+     * @return sites.
+     */
+    public function get_sites_in_group($id){
+      $query = "SELECT {$this->cgm_sites}.*, {$this->blogs}.path ".
+      "FROM {$this->cgm_sites}, {$this->blogs} ".
+      "WHERE {$this->cgm_sites}.group_id =$id AND ".
+      "{$this->blogs}.blog_id = {$this->cgm_sites}.blog_id";
+      $result = $this->conn->get_results($query);
+      return $result;
     }
 
     /*
@@ -62,17 +78,42 @@
      * @return true si usuario id = $user esta en el grupo con id = $group. False si no.
      */
     public function is_user_in_group($user, $group){
-      $query = "SELECT COUNT(*) FROM $this->cgm_groups WHERE {$this->cgm_groups}.user_id={$user}".
-      " AND {$this->cgm_groups}.group_id=$group";
-      $result = $this->conn->get_results($query);
+      $query = "SELECT COUNT(*) FROM $this->cgm_users WHERE {$this->cgm_users}.user_id={$user}".
+      " AND {$this->cgm_users}.group_id=$group";
+      $result = $this->conn->get_var($query);
       return ($result!=0)? true:false;
     }
 
     /*
+    * is_site_in_any_group
+    * Comprueba si un $site esta en algun grupo
+    * importante porque TODOS los usuarios podrian entrar si esto es asi
+    */
+    public function is_site_in_any_group($site){
+      $query = "SELECT COUNT(*) FROM {$this->cgm_sites} WHERE {$this->cgm_sites}.blog_id=$site";
+      $result = $this->conn->get_var($query);
+      return ($result>0)? true:false;
+    }
+
+    /*
+    * is_user_in_any_group
+    * Comprueba si un $user esta en algun grupo
+    */
+    public function is_user_in_any_group($user){
+      $query = "SELECT COUNT(*) FROM {$this->cgm_users} WHERE {$this->cgm_users}.user_id=$user";
+      $result = $this->conn->get_var($query);
+      return ($result>0)? true:false;
+    }
+
+    /*
     * can_user_access
+    * Comprueba si un usuario puede entrar a un $site
+    * Si el $site no esta en ningun grupo se entiende que el acceso es libre
     * @return true si el usuario $user puede entrar en el site $site
     */
     public function can_user_access($user, $site){
+      //primero se comprueba que el site esta en algun grupo. Si no es asi -> acceso=true
+      if (!$this->is_site_in_any_group($site)) return true;
       $query = "SELECT COUNT(*) FROM {$this->cgm_users}, {$this->cgm_sites} WHERE {$this->cgm_users}.group_id = {$this->cgm_sites}.group_id".
       " AND {$this->cgm_users}.user_id = $user AND {$this->cgm_sites}.blog_id = $site";
       $result = $this->conn->get_var($query);
@@ -158,8 +199,21 @@
     *borra un array de grupos
     *@return true|false
     */
-    public function delete_groups($group){
-      $query = "DELETE FROM {$this->cgm_groups} WHERE id IN ($ids)";
+    public function delete_groups($groups){
+      if (is_array($groups)) $groups = implode(',',$groups);
+      $query = "DELETE FROM {$this->cgm_groups} WHERE id IN ($groups)";
+      $result = $this->conn->query($query);
+      return $result;
+    }
+
+    /*
+    *delete_sites_from_group
+    *borra un array de sites del grupo $group
+    *@return true|false
+    */
+    public function delete_sites_from_group($sites, $group){
+      $sites = implode(',',$sites);
+      $query = "DELETE FROM {$this->cgm_sites} WHERE group_id=$group AND blog_id IN ($sites)";
       $result = $this->conn->query($query);
       return $result;
     }
@@ -176,12 +230,13 @@
     }
 
     /*
-    *delete_user_from_group
-    *borra a un $user de un $group
+    *delete_users_from_group
+    *borra a los usuarios $users de un $group
     *@return true|false
     */
-    public function delete_user_from_group($user, $group){
-      $query = "DELETE FROM {$this->cgm_users} WHERE group_id=$group AND user_id=$user";
+    public function delete_users_from_group($users, $group){
+      if (is_array($users)) $users = implode(',',$users);
+      $query = "DELETE FROM {$this->cgm_users} WHERE group_id=$group AND user_id IN ($users)";
       $result = $this->conn->query($query);
       return $result;
     }

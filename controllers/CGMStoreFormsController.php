@@ -1,7 +1,7 @@
 <?php
 /*
 * CGMStoreForms.php
-* Gestion de altas de los formularios
+* Gestion de altas, bajas y updates de los formularios
 */
 
 include_once(PLUGIN_PATH.'/gump/gump.class.php');
@@ -16,8 +16,8 @@ function cgm_store_group(){
   ));
 
   if ($result!==true){
-    display_errors($result);
-    wp_redirect(get_admin_url().'admin.php?page=grupos_multisite&action=add');
+    cgm_display_errors($result);
+    wp_redirect(get_admin_url().'network/admin.php?page=grupos_multisite&action=add');
   }
   else{
     global $wpdb;
@@ -38,12 +38,15 @@ function cgm_store_group(){
     else{
       queue_flash_message('Error al añadir el grupo :(', $class='error');
     }
-    wp_redirect(get_admin_url().'/network/admin.php?page=grupos_multisite&action=add');
+    wp_redirect(get_admin_url().'network/admin.php?page=grupos_multisite&action=add');
   }
 }
 
+/*
+* cgm_users_to_group
+* anadir/borrar usuarios al grupo
+*/
 function cgm_users_to_group(){
-  print_r($_POST);
   global $wpdb;
   $conn = new CGMGroupsModel($wpdb);
   $users = explode(',',$_POST['users_list']);
@@ -55,7 +58,7 @@ function cgm_users_to_group(){
       $success = $conn->set_user_in_group($user,$_POST['id_grupo']);
       if ($success==false) {
           queue_flash_message('Error al añadir al usuario ID='.$id, $class='error');
-          break;
+          wp_redirect(get_admin_url().'network/admin.php?page=users_grupos');
       }
     }
 
@@ -63,14 +66,72 @@ function cgm_users_to_group(){
 
     wp_redirect(get_admin_url().'network/admin.php?page=users_grupos');
   }
+  else if ($_POST['accion_grupo']=='delete'){
+    $success = $conn->delete_users_from_group($_POST['users_list'],$_POST['id_grupo']);
+    if ($success) queue_flash_message( 'Usuario(s) borrado(s) del grupo', $class = 'update' );
+    else queue_flash_message('Error al borrar usuarios', $class='error');
+    wp_redirect(get_admin_url().'network/admin.php?page=users_grupos');
+  }
+}
+
+/*
+* cgm_update_group
+* Actualizar grupo
+*/
+function cgm_update_group(){
+  if (!isset($_POST['id'])) die();
+  $result = GUMP::is_valid($_POST, array(
+	'id' => 'integer'
+  ));
+  if ($result!==true){
+    cgm_display_errors($result);
+    wp_redirect(get_admin_url().'network/admin.php?page=grupos_multisite');
+  }
+
+  /*
+  * Para actualizar los sites en vez de borrar todos y volver a escribir
+  * se buscan los registros que ya no estan por array_diff y se borran de la BD
+  * Luego, por el mismo proceso, se buscan los registros que son nuevos y se insertan
+  * Asi, los registros que ya estaban antes y que permanecen no se alteran
+  */
+  global $wpdb;
+  $conn = new CGMGroupsModel($wpdb);
+  $sites_anteriores = $conn->get_sites_in_group($_POST['id']);
+  $sites_anteriores_id = [];
+  $sites_actuales_id = $_POST['sites'];
+
+  foreach($sites_anteriores as $s){
+    array_push($sites_anteriores_id,$s->blog_id);
+  }
+  $sitios_a_eliminar = array_diff($sites_anteriores_id, $sites_actuales_id);
+  $sitios_a_insertar = array_diff($sites_actuales_id,$sites_anteriores_id);
+
+  //borrar sitios antiguos no seleccionados
+  foreach($sitios_a_eliminar as $s){
+    $conn->delete_sites_from_group($sitios_a_eliminar, $_POST['id']);
+  }
+
+  //insertar sitios nuevos
+  foreach ($sitios_a_insertar as $s){
+      $result = $conn->set_group_in_site($_POST['id'],$s);
+      if ($result == false) {$error = true; break;}
+  }
+
+  if (!$error){
+    queue_flash_message( 'Grupo editado correctamente', $class = 'update' );
+  }
+  else{
+    queue_flash_message('Error al editar el grupo :(', $class='error');
+  }
+  wp_redirect(get_admin_url().'network/admin.php?page=grupos_multisite');
 
 }
 
 /*
-* display_errors
+* cgm_display_errors
 * Crea un flash message con los errores de validacion y los renderiza
 */
-function display_errors($errors){
+function cgm_display_errors($errors){
   $message = 'Tienes los siguientes errores: ';
   $message .= '<ul>';
 

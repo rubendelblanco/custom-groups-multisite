@@ -63,6 +63,11 @@ section > div + div {
 </div>
 
 <script>
+jQuery('input[type="submit"]').click(function(){
+    jQuery('select#rightValues option').prop('selected', true);
+  }
+);
+
 jQuery("#btnLeft").click(function () {
     var selectedItem = jQuery("#rightValues option:selected");
     jQuery("#leftValues").append(selectedItem);

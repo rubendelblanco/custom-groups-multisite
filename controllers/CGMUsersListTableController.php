@@ -72,8 +72,9 @@ class CGMGroupsTable extends WP_List_Table
         $columns = array(
             'cb' => '<input type="checkbox" />', //Render a checkbox instead of text
             'user_login' => __('Nombre de usuario','custom_groups'),
-            'display_name'  => __('Nombre','reparaciones'),
-            'user_email' => __('Email', 'reparaciones')
+            'display_name'  => __('Nombre','custom_groups'),
+            'user_email' => __('Email', 'custom_groups'),
+            'grupos'    => __('Grupos', 'custom_groups'),
         );
         return $columns;
     }
@@ -88,7 +89,8 @@ class CGMGroupsTable extends WP_List_Table
     function get_sortable_columns()
     {
         $sortable_columns = array(
-            'user_login' => array('display_name', true),
+            'user_login' => array('user_login', false),
+            'user_email' => array('user_email', false),
         );
         return $sortable_columns;
     }
@@ -109,7 +111,10 @@ class CGMGroupsTable extends WP_List_Table
         global $wpdb;
         $table_users = $wpdb->base_prefix . 'users'; // do not forget about tables prefix
         $table_meta = $wpdb->base_prefix . 'usermeta';
-        $per_page = 10; // constant, how much records will be shown per page
+        $table_cgm_users = $wpdb->base_prefix.'cgm_users';
+        $table_groups = $wpdb->base_prefix.'cgm_groups';
+        $per_page = 20; // constant, how much records will be shown per page
+        $s='';
 
         $columns = $this->get_columns();
         $hidden = array();
@@ -126,30 +131,39 @@ class CGMGroupsTable extends WP_List_Table
 
         // prepare query params, as usual current page, order by and order direction
         $paged = isset($_REQUEST['paged']) ? max(0, intval($_REQUEST['paged']) - 1) : 0;
-        $orderby = (isset($_REQUEST['orderby']) && in_array($_REQUEST['orderby'], array_keys($this->get_sortable_columns()))) ? $_REQUEST['orderby'] : 'id';
+        $orderby = (isset($_REQUEST['orderby']) && in_array($_REQUEST['orderby'], array_keys($this->get_sortable_columns()))) ? $_REQUEST['orderby'] : 'user_login';
         $order = (isset($_REQUEST['order']) && in_array($_REQUEST['order'], array('asc', 'desc'))) ? $_REQUEST['order'] : 'asc';
 
-        // [REQUIRED] define $items array
-        // notice that last argument is ARRAY_A, so we will retrieve array
-        $query = "SELECT {$table_users}.*,meta_value AS avatar FROM $table_users, $table_meta".
-        " WHERE {$table_users}.id={$table_meta}.user_id AND meta_key='gpa_user_avatar'";
-
         //consulta de busqueda
-        /*if (isset( $_REQUEST ["s"] )){
+        if (isset( $_REQUEST ["s"] )){
            $search = $_REQUEST["s"];
-           $query .= " WHERE cliente.display_name LIKE '%%{$search}%%' OR marca LIKE '%%{$search}%%' OR cliente.user_email LIKE '%%{$search}%%'";
-         }*/
-         echo $query.PHP_EOL;
-         echo ' per page: '.$per_page.PHP_EOL;
-         echo ' paged: '.$paged.PHP_EOL;
-         echo ' total items: '.$total_items;
-        //$this->items = $wpdb->get_results($wpdb->prepare($query, $per_page, $paged), ARRAY_A);
+           $s = "WHERE (user_login LIKE '%%{$search}%%' OR user_email LIKE '%%{$search}%%' OR display_name LIKE '%%{$search}%%') ";
+           $total_items = $wpdb->query($query);
+         }
+
+        $query = "SELECT {$table_users}.*, GROUP_CONCAT(COALESCE({$table_groups}.nombre, '') SEPARATOR ',') ".
+        "AS grupos FROM {$table_users} LEFT JOIN {$table_cgm_users} INNER JOIN {$table_groups} ".
+        "ON {$table_cgm_users}.group_id = {$table_groups}.id ON {$table_users}.ID = {$table_cgm_users}.user_id ".$s.
+        "GROUP BY {$table_users}.ID";
+
+         $query .= " ORDER BY $orderby $order";
+         $query .= " LIMIT ".$per_page*$paged.",$per_page";
+
+         //por lo que sea no funcionan los parametros $paged y $per_page en esta funcion. De ahi que haya
+         //puesto el LIMIT en la consulta
+         $this->items = $wpdb->get_results($wpdb->prepare($query,$paged,$per_page), ARRAY_A);
+
+         //asignar avatar (deberia estar en la consulta pero no he sido quien)
+         for ($i = 0; $i<count($this->items); $i++){
+           $avatar = get_user_meta($this->items[$i]['ID'], 'gpa_user_avatar');
+           $this->items[$i]['avatar'] = $avatar[0];
+         }
 
         // [REQUIRED] configure pagination
         $this->set_pagination_args(array(
             'total_items' => $total_items, // total items defined above
             'per_page' => $per_page, // per page constant defined at top of method
-            //'search' =>$_REQUEST["s"] , // busqueda
+            'search' =>$_REQUEST["s"] , // busqueda
             'total_pages' => ceil($total_items / $per_page) // calculate pages count
         ));
 

@@ -7,6 +7,12 @@
     require_once(PLUGIN_PATH.'controllers/CGMGroupsTableController.php');
     $tabla = new CGMGroupsTable();
     $tabla->prepare_items();
-    $tabla->display();
-   ?>
+  ?>
+  <form id="groups-table" method="GET">
+      <?php $tabla->search_box('Buscar', 'search'); ?>
+      <input type="hidden" name="page" value="<?php echo $_REQUEST['page'] ?>"/>
+    <?php
+      $tabla->display();
+     ?>
+   </form>
 </div>

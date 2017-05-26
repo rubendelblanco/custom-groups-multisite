@@ -67,5 +67,6 @@ register_activation_hook(__FILE__, 'cgm_install');
 add_action('network_admin_menu', 'cgm_admin_menu');
 add_action('admin_action_cgm_add_group','cgm_store_group');
 add_action('admin_action_cgm_users_to_group','cgm_users_to_group');
+add_action('admin_action_cgm_edit_group','cgm_update_group');
 add_action('wp_head', 'cgm_check_user_entry');
 ?>

@@ -4,6 +4,12 @@
     require_once(PLUGIN_PATH.'controllers/CGMUsersListTableController.php');
     $tabla = new CGMGroupsTable();
     $tabla->prepare_items();
+  ?>
+  <form id="persons-table" method="GET">
+        <?php $tabla->search_box('Buscar', 'search'); ?>
+        <input type="hidden" name="page" value="<?php echo $_REQUEST['page'] ?>"/>
+  </form>
+  <?php
     $tabla->display();
    ?>
 </div>
