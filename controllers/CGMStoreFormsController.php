@@ -88,31 +88,20 @@ function cgm_update_group(){
     wp_redirect(get_admin_url().'network/admin.php?page=grupos_multisite');
   }
 
-  /*
-  * Para actualizar los sites en vez de borrar todos y volver a escribir
-  * se buscan los registros que ya no estan por array_diff y se borran de la BD
-  * Luego, por el mismo proceso, se buscan los registros que son nuevos y se insertan
-  * Asi, los registros que ya estaban antes y que permanecen no se alteran
-  */
   global $wpdb;
   $conn = new CGMGroupsModel($wpdb);
   $sites_anteriores = $conn->get_sites_in_group($_POST['id']);
   $sites_anteriores_id = [];
   $sites_actuales_id = $_POST['sites'];
 
-  foreach($sites_anteriores as $s){
+  foreach ($sites_anteriores as $s){
     array_push($sites_anteriores_id,$s->blog_id);
   }
-  $sitios_a_eliminar = array_diff($sites_anteriores_id, $sites_actuales_id);
-  $sitios_a_insertar = array_diff($sites_actuales_id,$sites_anteriores_id);
 
-  //borrar sitios antiguos no seleccionados
-  foreach($sitios_a_eliminar as $s){
-    $conn->delete_sites_from_group($sitios_a_eliminar, $_POST['id']);
-  }
+  $conn->delete_sites_from_group($sites_anteriores_id, $_POST['id']);
 
   //insertar sitios nuevos
-  foreach ($sitios_a_insertar as $s){
+  foreach ($sites_actuales_id as $s){
       $result = $conn->set_group_in_site($_POST['id'],$s);
       if ($result == false) {$error = true; break;}
   }
@@ -123,6 +112,10 @@ function cgm_update_group(){
   else{
     queue_flash_message('Error al editar el grupo :(', $class='error');
   }
+
+  //cambiar el nombre del grupo
+  $conn->update_group($_POST['nombre'], $_POST['id']);
+
   wp_redirect(get_admin_url().'network/admin.php?page=grupos_multisite');
 
 }
