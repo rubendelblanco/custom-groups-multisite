@@ -126,8 +126,27 @@ class CGMGroupsTable extends WP_List_Table
         // [OPTIONAL] process bulk action if any
         $this->process_bulk_action();
 
+        //en caso de que se use la opcion listar...
+        if (isset($_GET['action']) && $_GET['action']=='list' && isset($_GET['group_id'])){
+          $conn = new CGMGroupsModel($wpdb);
+          $users = $conn->get_users($_GET['group_id']);
+          $users_id = Array();
+          $group_id = $_GET['group_id'];
+
+          for ($i=0; $i<count($users); $i++){
+            array_push($users_id, $users[$i]->user_id);
+          }
+
+          $users_id = implode(",",$users_id);
+          $s = "WHERE {$table_cgm_users}.user_id IN ($users_id) ";
+        }
+
         // will be used in pagination settings
+        if(!isset($users_id))
         $total_items = $wpdb->get_var("SELECT COUNT(id) FROM $table_users");
+        else
+        $total_items = $wpdb->get_var("SELECT COUNT(id) FROM $table_cgm_users WHERE group_id=$group_id");
+
 
         // prepare query params, as usual current page, order by and order direction
         $paged = isset($_REQUEST['paged']) ? max(0, intval($_REQUEST['paged']) - 1) : 0;
@@ -177,6 +196,7 @@ class CGMGroupsTable extends WP_List_Table
         $option1 = '<select name="accion_grupo">';
         $option1 .= '<option value="add">Añadir a grupo</option>';
         $option1 .= '<option value="delete">Borrar de grupo</option>';
+        $option1 .= '<option value="list">Listar grupo</option>';
         $option1 .= '</select>';
         $option2 = '<select name="id_grupo">';
         foreach ($grupos as $grupo){

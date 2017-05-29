@@ -57,7 +57,7 @@
      * @return usuarios en objeto $this->conn.
      */
     public function get_users($id){
-      $query = "SELECT {$this->users}.* FROM $this->users, $this->cgm_groups WHERE {$this->users}.id={$this->cgm_groups}.user_id AND {$this->cgm_groups}.group_id=$id";
+      $query = "SELECT {$this->cgm_users}.* FROM {$this->cgm_users} WHERE {$this->cgm_users}.group_id =$id";
       $result = $this->conn->get_results($query);
       return $result;
     }

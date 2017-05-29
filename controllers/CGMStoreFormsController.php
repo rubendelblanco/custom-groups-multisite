@@ -44,7 +44,7 @@ function cgm_store_group(){
 
 /*
 * cgm_users_to_group
-* anadir/borrar usuarios al grupo
+* anadir/borrar/listar usuarios al grupo
 */
 function cgm_users_to_group(){
   global $wpdb;
@@ -71,6 +71,9 @@ function cgm_users_to_group(){
     if ($success) queue_flash_message( 'Usuario(s) borrado(s) del grupo', $class = 'update' );
     else queue_flash_message('Error al borrar usuarios', $class='error');
     wp_redirect(get_admin_url().'network/admin.php?page=users_grupos');
+  }
+  else if ($_POST['accion_grupo']=='list'){
+    wp_redirect(get_admin_url().'network/admin.php?page=users_grupos&action=list&group_id='.$_POST['id_grupo']);
   }
 }
 
